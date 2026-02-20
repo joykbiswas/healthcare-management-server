@@ -2,6 +2,7 @@
 // import { UserStatus } from "../../../generated/prisma/enums";
 import { UserStatus } from "../../../generated/prisma/enums";
 import { auth } from "../../lib/auth";
+import { prisma } from "../../lib/prisma";
 
 interface IRegisterPatientPayload {
     name: string;
@@ -28,15 +29,59 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
     }
 
     //TODO : Create Patient Profile In Transaction After Sign Up Of Patient In USer Model
-    // const patient = await prisma.$transaction( async (tx) => {
+    try {
+        const patient = await prisma.$transaction(async (tx) => {
 
-    //     await tx.pa
-    // })
+            const patientTx = await tx.patient.create({
+                data: {
+                    userId: data.user.id,
+                    name: payload.name,
+                    email: payload.email,
+                }
+            })
 
-    return data
+            return patientTx
+        })
 
+        // const accessToken = tokenUtils.getAccessToken({
+        //     userId: data.user.id,
+        //     role: data.user.role,
+        //     name: data.user.name,
+        //     email: data.user.email,
+        //     status: data.user.status,
+        //     isDeleted: data.user.isDeleted,
+        //     emailVerified: data.user.emailVerified,
+        // });
+
+        // const refreshToken = tokenUtils.getRefreshToken({
+        //     userId: data.user.id,
+        //     role: data.user.role,
+        //     name: data.user.name,
+        //     email: data.user.email,
+        //     status: data.user.status,
+        //     isDeleted: data.user.isDeleted,
+        //     emailVerified: data.user.emailVerified,
+        // });
+
+        return {
+            ...data,
+            // accessToken,
+            // refreshToken,
+            patient
+        }
+
+    } catch (error) {
+        console.log("Transaction error : ", error);
+        await prisma.user.delete({
+            where: {
+                id: data.user.id
+            }
+        })
+        throw error;
+    }
 
 }
+
 
 interface ILoginUserPayload {
     email: string;
