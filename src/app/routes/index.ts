@@ -1,6 +1,8 @@
 import { Router } from "express";
-import { SpecialtyRouters } from "../module/specialty/specialty.route";
+import { SpecialtyRoutes } from "../module/specialty/specialty.route";
 
 const router = Router();
-router.use("/specialties", SpecialtyRouters)
+
+router.use("/specialties", SpecialtyRoutes)
+
 export const IndexRoutes = router;
