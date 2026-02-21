@@ -5,8 +5,7 @@ import z from "zod";
 import AppError from "../errorHelpers/AppError";
 import { envVars } from "../../config/env";
 import { handleZodError } from "../errorHelpers/handleZodError";
-// import { handleZodError } from "../errorHelpers/handleZodError";
-// import { TErrorResponse, TErrorSources } from "../interfaces/error.interface";
+
 
 export interface TErrorSources {
     path: string;
@@ -32,25 +31,6 @@ export const globalErrorHandler = (err: any, req: Request, res: Response, next: 
     let statusCode: number = status.INTERNAL_SERVER_ERROR;
     let message: string = 'Internal Server Error';
     let stack: string | undefined = undefined;
-
-    //Zod Error Pattern
-    /*
-     error.issues; 
-    /* [
-      {
-        expected: 'string',
-        code: 'invalid_type',
-        path: [ 'username' , 'password' ], => username password
-        message: 'Invalid input: expected string'
-      },
-      {
-        expected: 'number',
-        code: 'invalid_type',
-        path: [ 'xp' ],
-        message: 'Invalid input: expected number'
-      }
-    ] 
-    */
 
     if (err instanceof z.ZodError) {
         const simplifiedError = handleZodError(err);
