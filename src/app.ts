@@ -11,6 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
 app.use(cookieParser());
 
 app.use("/api/v1", IndexRoutes);
@@ -24,6 +25,7 @@ app.get("/", async (req: Request, res: Response) => {
 });
 
 app.use(globalErrorHandler);
+
 app.use(notFound);
 
 export default app;
