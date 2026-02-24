@@ -36,18 +36,18 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
 
     //TODO : Create Patient Profile In Transaction After Sign Up Of Patient In USer Model
     try {
-        const patient = await prisma.$transaction(async (tx) => {
+        // const patient = await prisma.$transaction(async (tx) => {
 
-            const patientTx = await tx.patient.create({
-                data: {
-                    userId: data.user.id,
-                    name: payload.name,
-                    email: payload.email,
-                }
-            })
+        //     const patientTx = await tx.patient.create({
+        //         data: {
+        //             userId: data.user.id,
+        //             name: payload.name,
+        //             email: payload.email,
+        //         }
+        //     })
 
-            return patientTx
-        })
+        //     return patientTx
+        // })
 
         const accessToken = tokenUtils.getAccessToken({
             userId: data.user.id,
@@ -73,7 +73,7 @@ const registerPatient = async (payload: IRegisterPatientPayload) => {
             ...data,
             accessToken,
             refreshToken,
-            patient
+            // patient //If Response need add patient then use
         }
 
     } catch (error) {
