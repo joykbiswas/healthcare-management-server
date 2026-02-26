@@ -4,12 +4,14 @@ import { globalErrorHandler } from "./app/middleware/globalErrorHandler";
 import { notFound } from "./app/middleware/notFound";
 import { IndexRoutes } from "./app/routes";
 import { toNodeHandler } from "better-auth/node";
+import qs from "qs";
 import cors from "cors";
 import { auth } from "./app/lib/auth";
 import path from "path";
 import { envVars } from "./config/env";
 
 const app: Application = express();
+app.set("query parser", (str : string) => qs.parse(str));
 
 app.set("view engine", "ejs");
 app.set("views",path.resolve(process.cwd(), `src/app/templates`) )
