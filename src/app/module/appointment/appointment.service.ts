@@ -1,5 +1,5 @@
+/* eslint-disable no-useless-assignment */
 import status from "http-status";
-// import { uuidv7 } from "zod/mini";
 import { v7 as uuidv7 } from "uuid";
 import { PaymentStatus, Role } from "../../../generated/prisma/enums";
 // import { envVars } from "../../config/env";
@@ -9,8 +9,8 @@ import { IRequestUser } from "../../interfaces/requestUser.interface";
 import { prisma } from "../../lib/prisma";
 import { AppointmentStatus } from './../../../generated/prisma/enums';
 import { IBookAppointmentPayload } from "./appointment.interface";
-import { envVars } from "../../../config/env";
 import { stripe } from "../../../config/stripe.config";
+import { envVars } from "../../../config/env";
 
 // Pay Now Book Appointment
 const bookAppointment = async (payload : IBookAppointmentPayload, user : IRequestUser) => {
@@ -132,7 +132,6 @@ const getMyAppointments = async (user: IRequestUser) => {
         }
     });
 
-    // eslint-disable-next-line no-useless-assignment
     let appointments = [];
 
     if (patientData) {
@@ -163,41 +162,60 @@ const getMyAppointments = async (user: IRequestUser) => {
 
 }
 
-// 1. Completed Or Cancelled Appointments should not be allowed to update status
-// 2. Doctors can only update Appoinment status from schedule to inprogress or inprogress to complted or schedule to cancelled.
-// 3. Patients can only cancel the scheduled appointment if it scheduled not completed or cancelled or inprogress. 
-// 4. Admin and Super admin can update to any status.
-
-const changeAppointmentStatus = async (appointmentId: string, appointmentStatus: AppointmentStatus, user: IRequestUser) => {
+const changeAppointmentStatus = async (
+    appointmentId: string, 
+    appointmentStatus: AppointmentStatus, 
+    user: IRequestUser
+) => {
     const appointmentData = await prisma.appointment.findUniqueOrThrow({
-        where: {
-            id: appointmentId,
-            // status: AppointmentStatus.SCHEDULED
-        },
-        include: {
-            doctor: true
-        }
+        where: { id: appointmentId },
+        include: { doctor: true, patient: true }
     });
 
-    // if (!appointmentData) {
-    //     throw new AppError(status.NOT_FOUND, "Appointment not found or already completed/cancelled");
-    // }
+    const currentStatus = appointmentData.status;
+
+    if ((currentStatus === AppointmentStatus.COMPLETED || currentStatus === AppointmentStatus.CANCELED) && 
+        !(user.role === Role.ADMIN || user.role === Role.SUPER_ADMIN)) {
+        throw new AppError(status.BAD_REQUEST, `Cannot update a ${currentStatus} appointment`);
+    }
 
     if (user?.role === Role.DOCTOR) {
-        if (!(user?.email === appointmentData.doctor.email))
-            throw new AppError(status.BAD_REQUEST, "This is not your appointment")
+        if (user?.email !== appointmentData.doctor.email) {
+            throw new AppError(status.FORBIDDEN, "This is not your appointment");
+        }
+
+        const allowedDoctorTransitions: Record<string, AppointmentStatus[]> = {
+            [AppointmentStatus.SCHEDULED]: [AppointmentStatus.INPROGRESS, AppointmentStatus.CANCELED],
+            [AppointmentStatus.INPROGRESS]: [AppointmentStatus.COMPLETED],
+        };
+
+        if (!allowedDoctorTransitions[currentStatus]?.includes(appointmentStatus)) {
+            throw new AppError(status.BAD_REQUEST, `Doctor cannot change status from ${currentStatus} to ${appointmentStatus}`);
+        }
+    }
+
+    if (user?.role === Role.PATIENT) {
+        if (user?.email !== appointmentData.patient.email) {
+            throw new AppError(status.FORBIDDEN, "This is not your appointment");
+        }
+
+        if (currentStatus !== AppointmentStatus.SCHEDULED || appointmentStatus !== AppointmentStatus.CANCELED) {
+            throw new AppError(status.BAD_REQUEST, "Patients can only cancel scheduled appointments");
+        }
     }
 
     return await prisma.appointment.update({
-        where: {
-            id: appointmentId
-        },
+        where: { id: appointmentId },
         data: {
             status: appointmentStatus
+        },
+        include: {
+            doctor: true,
+            patient: true,
+            schedule: true
         }
-    })
-
-}
+    });
+};
 
 // refactoring on include of doctor and patient data in appointment details, we can use query builder to get the data in single query instead of multiple queries in case of doctor and patient both
 const getMySingleAppointment = async (appointmentId: string, user: IRequestUser) => {

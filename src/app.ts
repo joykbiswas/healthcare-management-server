@@ -30,13 +30,10 @@ app.use(cors({
 }))
 
 
-//google sigIn
-app.use("/api/auth", toNodeHandler(auth))
-
 
 
 // Enable URL-encoded form data parsing
-app.use(express.urlencoded({ extended: true }));
+// app.use(express.urlencoded({ extended: true }));
 
 // Middleware to parse JSON bodies
 app.use(express.json());
@@ -44,6 +41,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
+
+//google sigIn
+app.use("/api/auth", toNodeHandler(auth))
 
 cron.schedule("*/25 * * * *", async () => {
     try {
