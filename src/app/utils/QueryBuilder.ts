@@ -405,6 +405,10 @@ TInclude = Record<string, unknown>
             return false;
         }
 
+        if (typeof value === 'string' && !isNaN(Date.parse(value)) && isNaN(Number(value))) {
+        return new Date(value);
+        }
+        
         if(typeof value === 'string' && !isNaN(Number(value)) && value != ""){
             return Number(value);
         }
