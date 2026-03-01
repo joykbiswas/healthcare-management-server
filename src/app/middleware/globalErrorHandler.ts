@@ -3,24 +3,12 @@ import { NextFunction, Request, Response } from "express";
 import status from "http-status";
 import z from "zod";
 import AppError from "../errorHelpers/AppError";
-import { envVars } from "../../config/env";
 import { handleZodError } from "../errorHelpers/handleZodError";
-import { deleteFileFromCloudinary } from "../../config/cloudinary.config";
+import { TErrorResponse, TErrorSources } from "../interfaces/error.interface";
+import { deleteUploadedFilesFromGlobalErrorHandler } from "../utils/deleteUploadedFilesFromGlobalErrorHandler.ts";
+import { envVars } from "../../config/env";
 
 
-export interface TErrorSources {
-    path: string;
-    message: string;
-}
-
-export interface TErrorResponse {
-    statusCode?: number;
-    success: boolean;
-    message: string;
-    errorSources: TErrorSources[];
-    stack?: string;
-    error?: unknown;
-}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const globalErrorHandler = async (err: any, req: Request, res: Response, next: NextFunction) => {
@@ -28,14 +16,15 @@ export const globalErrorHandler = async (err: any, req: Request, res: Response, 
         console.log("Error from Global Error Handler", err);
     }
 
-    if(req.file){
-        await deleteFileFromCloudinary(req.file.path)
-    }
+    // if(req.file){
+    //     await deleteFileFromCloudinary(req.file.path)
+    // }
 
-    if(req.files && Array.isArray(req.files) && req.files.length > 0){
-        const imageUrls = req.files.map((file) => file.path);
-        await Promise.all(imageUrls.map(url => deleteFileFromCloudinary(url))); 
-    }
+    // if(req.files && Array.isArray(req.files) && req.files.length > 0){
+    //     const imageUrls = req.files.map((file) => file.path);
+    //     await Promise.all(imageUrls.map(url => deleteFileFromCloudinary(url))); 
+    // }
+    await deleteUploadedFilesFromGlobalErrorHandler(req);
 
     let errorSources: TErrorSources[] = []
     let statusCode: number = status.INTERNAL_SERVER_ERROR;
